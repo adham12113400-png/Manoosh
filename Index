@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#02030a">
+<title>PROJECT M — The Unknown World</title>
+<style>
+:root{--cy:#00e5ff;--vi:#a78bfa;--tx:#dbe7ff;--dim:#7d8bb0;--ln:rgba(0,229,255,.3)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#02030a;color:var(--tx);overflow:hidden;touch-action:none;overscroll-behavior:none;font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",system-ui,sans-serif}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+[hidden]{display:none!important}
+button{font:inherit;color:var(--tx);background:rgba(8,13,30,.8);border:1px solid var(--ln);border-radius:8px;padding:.65em 1.1em;cursor:pointer}
+button:focus-visible{outline:2px solid var(--vi);outline-offset:2px}
+#hud{position:fixed;top:0;inset-inline:0;padding:max(12px,env(safe-area-inset-top)) 14px 0;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none}
+#obj{font-size:.9rem;color:var(--cy);text-shadow:0 0 10px rgba(0,229,255,.5);max-width:70vw;line-height:1.4}
+#mbtn{pointer-events:auto;width:44px;height:44px;padding:0}
+#marker{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;text-align:center;font-size:.75rem;color:var(--vi);text-shadow:0 0 8px #000}
+#marker i{display:block;width:12px;height:12px;margin:0 auto 4px;border:2px solid var(--vi);border-radius:50%;box-shadow:0 0 10px var(--vi)}
+#prompt{position:fixed;left:50%;bottom:32%;transform:translateX(-50%);padding:.4em 1em;border:1px solid var(--ln);border-radius:99px;background:rgba(8,13,30,.8);opacity:0;pointer-events:none;transition:opacity .2s}
+#prompt.on{opacity:1}
+#toast{position:fixed;top:16%;left:50%;transform:translateX(-50%);padding:.6em 1.2em;border:1px solid var(--vi);border-radius:8px;background:rgba(8,13,30,.92);opacity:0;pointer-events:none;transition:opacity .3s;text-align:center}
+#toast.on{opacity:1}
+#dlg{position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(560px,calc(100vw - 24px));padding:1rem 1.2rem;border:1px solid var(--ln);border-radius:10px;background:rgba(6,10,24,.95);line-height:1.7}
+#dt{color:var(--vi);font-weight:600}
+#touch{position:fixed;inset:auto 0 0 0;height:200px;pointer-events:none}
+#joy{position:absolute;left:max(20px,env(safe-area-inset-left));bottom:max(26px,env(safe-area-inset-bottom));width:136px;height:136px;border-radius:50%;border:1px solid var(--ln);background:rgba(8,13,30,.4);pointer-events:auto;touch-action:none}
+#knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(0,229,255,.28);border:1px solid var(--cy)}
+.act{position:absolute;width:78px;height:78px;border-radius:50%;padding:0;pointer-events:auto;touch-action:none;right:max(22px,env(safe-area-inset-right))}
+#boost{bottom:max(26px,env(safe-area-inset-bottom));border-color:var(--cy)}
+#scan{bottom:calc(max(26px,env(safe-area-inset-bottom)) + 92px);border-color:var(--vi)}
+#ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,3,10,.8);backdrop-filter:blur(3px);padding:14px}
+.panel{width:min(380px,100%);display:flex;flex-direction:column;gap:.7rem;text-align:center}
+.logo{display:flex;flex-direction:column;align-items:center;margin-bottom:.6rem}
+.logo small{letter-spacing:.7em;color:var(--dim);font-size:.8rem;padding-inline-start:.7em}
+.logo b{position:relative;font-size:5rem;font-weight:200;line-height:1.15;color:var(--cy);text-shadow:0 0 26px rgba(0,229,255,.55);width:1.7em}
+.logo b::before{content:"";position:absolute;inset:.05em;border-radius:50%;border:1px solid var(--vi);border-top-color:transparent;border-left-color:transparent;animation:sp 14s linear infinite}
+.logo span{font-size:.8rem;color:var(--dim)}
+@keyframes sp{to{transform:rotate(360deg)}}
+.lr{display:flex;gap:8px;justify-content:center}.lr .on{border-color:var(--cy);color:var(--cy)}
+.hint{font-size:.8rem;color:var(--dim);line-height:1.5}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"><div id="obj"></div><button id="mbtn" aria-label="Menu">☰</button></div>
+<div id="marker" hidden><i></i><span id="mtxt"></span></div>
+<div id="prompt"><span id="ptxt"></span></div>
+<div id="toast"></div>
+<div id="dlg" hidden><div id="dt"></div><div id="dx"></div><button id="dc" data-i="close" style="margin-top:.5rem;padding:.35em .9em"></button></div>
+<div id="touch" hidden><div id="joy"><div id="knob"></div></div><button class="act" id="scan" data-i="scan"></button><button class="act" id="boost" data-i="boost"></button></div>
+<div id="ov"><div class="panel">
+  <div class="logo"><small>PROJECT</small><b>M</b><span data-i="sub"></span></div>
+  <button id="go">Begin the journey</button>
+  <noscript><div class="hint">JavaScript is required to play. Please enable it in Settings → Safari → Advanced.</div></noscript>
+  <div class="lr"><button class="lg" data-l="en">English</button><button class="lg" data-l="ar">العربية</button></div>
+  <button id="reset" data-i="reset"></button>
+  <div class="hint" data-i="hint"></div>
+  <div class="hint" id="err" hidden></div>
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const SAVE_KEY = 'projectM.space.v1';
+// Shows any startup error on screen (iPhones have no easy console)
+const showErr = m => { const e = $('err'); e.hidden = false; e.textContent = m; };
+addEventListener('error', ev => showErr('Error: ' + ev.message + (ev.lineno ? ' (line ' + ev.lineno + ')' : '')));
+
+/* ---------- Seven worlds (edit positions/colors here) ---------- */
+const COLORS = [0x6ec6ff, 0xff8a65, 0xffd54f, 0xb0bec5, 0x8d9bff, 0x81c784, 0xfff3b0];
+const IDS = ['memory','courage','time','truth','silence','choice','light'];
+const PLANETS = IDS.map((id, i) => {
+  const a = i * 0.75, d = 700 + i * 520;
+  return { id, color: COLORS[i], r: 50 + (i % 3) * 15, ring: i === 2 || i === 5,
+    pos: [Math.sin(a) * d, ((i * 37) % 5 - 2) * 70, -Math.cos(a) * d] };
+});
+
+/* ---------- Text (Arabic + English) ---------- */
+const T = {
+  en: { sub:'The Unknown World · The 7 Keys', start:'Begin the journey', cont:'Continue', reset:'Reset progress', resetQ:'Erase all progress? This cannot be undone.',
+    hint:'Drag the stick to steer. Hold Boost to travel faster. Desktop: WASD / arrows, Shift = boost, E = scan.', scan:'Scan', boost:'Boost', close:'Close',
+    obj:'Scan the seven worlds ({n}/7)', done:'All seven worlds scanned. The Last Gate is still being drawn.', near:'Scan {name}', found:'Scanned: {name}',
+    cdn:'The 3D engine could not load. Check your internet connection and reload.', dist:'{name} · {d} u',
+    'n.memory':'The World of Memory','n.courage':'The World of Courage','n.time':'The World of Time','n.truth':'The World of Truth','n.silence':'The World of Silence','n.choice':'The World of Choice','n.light':'The World of Light',
+    'l.memory':'Its oceans replay sounds that no one recorded.','l.courage':'A storm circles it that never reaches the ground.','l.time':'Day and night here argue about which came first.',
+    'l.truth':'Its surface is a mirror, cracked in seven places.','l.silence':'Nothing in its orbit makes a sound, not even you.','l.choice':'Two moons, one path. Neither is marked.','l.light':'It glows from inside, as if waiting to be asked.' },
+  ar: { sub:'العالم المجهول · المفاتيح السبعة', start:'ابدئي الرحلة', cont:'متابعة', reset:'إعادة ضبط التقدم', resetQ:'هل تريدين مسح كل التقدم؟ لا يمكن التراجع.',
+    hint:'اسحبي العصا للتوجيه. اضغطي مطولاً على «تسريع» للانطلاق أسرع. على الكمبيوتر: WASD أو الأسهم، Shift تسريع، E مسح.', scan:'مسح', boost:'تسريع', close:'إغلاق',
+    obj:'امسحي العوالم السبعة ({n}/7)', done:'تم مسح العوالم السبعة. البوابة الأخيرة لا تزال قيد الرسم.', near:'مسح {name}', found:'تم مسح: {name}',
+    cdn:'تعذّر تحميل المحرك ثلاثي الأبعاد. تحقّقي من الإنترنت وأعيدي التحميل.', dist:'{name} · {d} و',
+    'n.memory':'عالم الذاكرة','n.courage':'عالم الشجاعة','n.time':'عالم الزمن','n.truth':'عالم الحقيقة','n.silence':'عالم الصمت','n.choice':'عالم الاختيار','n.light':'عالم النور',
+    'l.memory':'محيطاته تعيد أصواتاً لم يسجّلها أحد.','l.courage':'عاصفة تدور حوله ولا تصل أبداً إلى سطحه.','l.time':'الليل والنهار هنا يتجادلان أيهما جاء أولاً.',
+    'l.truth':'سطحه مرآة مشقوقة في سبعة مواضع.','l.silence':'لا شيء في مداره يُصدر صوتاً، ولا حتى أنتِ.','l.choice':'قمران ومسار واحد. لا علامة على أيّ منهما.','l.light':'يتوهج من الداخل كأنه ينتظر أن يُسأل.' }
+};
+let lang = 'en';
+const t = (k, p) => { let s = (T[lang] && T[lang][k]) || T.en[k] || k; if (p) for (const x in p) s = s.split('{' + x + '}').join(p[x]); return s; };
+
+/* ---------- Save (validated) ---------- */
+let S = { v: 1, lang: 'en', started: false, pos: [0, 0, 0], q: [0, 0, 0, 1], scanned: [] };
+try {
+  const d = JSON.parse(localStorage.getItem(SAVE_KEY));
+  if (d && d.v === 1) {
+    const nums = (a, n) => Array.isArray(a) && a.length === n && a.every(Number.isFinite);
+    S.lang = d.lang === 'ar' ? 'ar' : 'en'; S.started = !!d.started;
+    if (nums(d.pos, 3) && nums(d.q, 4)) { S.pos = d.pos; S.q = d.q; }
+    S.scanned = (Array.isArray(d.scanned) ? d.scanned : []).filter(x => IDS.includes(x));
+  }
+} catch (e) { /* corrupted save: start fresh */ }
+lang = S.lang;
+const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} };
+
+/* ---------- Language ---------- */
+function applyLang() {
+  document.documentElement.lang = lang; document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  document.querySelectorAll('[data-i]').forEach(el => { el.textContent = t(el.dataset.i); });
+  document.querySelectorAll('.lg').forEach(b => b.classList.toggle('on', b.dataset.l === lang));
+  $('go').textContent = S.started ? t('cont') : t('start');
+  objective();
+}
+function objective() {
+  const n = S.scanned.length; $('obj').textContent = n < 7 ? t('obj', { n }) : t('done');
+}
+
+/* ---------- Tiny synthesized sound (optional, starts after a tap) ---------- */
+let ac = null;
+function tone(f, d, delay = 0, type = 'sine', v = .15) {
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume();
+    const o = ac.createOscillator(), g = ac.createGain(), t0 = ac.currentTime + delay;
+    o.type = type; o.frequency.value = f; g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(v, t0 + .03); g.gain.exponentialRampToValueAtTime(.0001, t0 + d);
+    o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0 + d + .05);
+  } catch (e) {}
+}
+
+/* ---------- UI helpers ---------- */
+let toastTimer;
+function toast(m) { const e = $('toast'); e.textContent = m; e.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => e.classList.remove('on'), 2600); }
+let frozen = true;
+const openMenu = () => { frozen = true; $('ov').hidden = false; applyLang(); };
+const closeMenu = () => { $('ov').hidden = true; frozen = false; };
+
+applyLang(); // text appears even if the 3D engine fails below
+if (typeof THREE === 'undefined') {
+  const e = $('err'); e.hidden = false; e.textContent = t('cdn'); applyLang();
+  $('go').disabled = true; $('go').onclick = null; return;
+}
+
+/* ---------- Three.js scene ---------- */
+try {
+const canvas = $('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x02030a);
+const camera = new THREE.PerspectiveCamera(65, 1, 0.5, 30000);
+scene.add(new THREE.AmbientLight(0x334466, 0.9));
+const sun = new THREE.DirectionalLight(0xffffff, 1.1); sun.position.set(1, 0.7, 0.4); scene.add(sun);
+
+function glowTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.3)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c);
+}
+const glowTex = glowTexture();
+const addGlow = (parent, color, size, op) => {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false }));
+  s.scale.set(size, size, 1); parent.add(s); return s;
+};
+
+// Stars: a sphere of points that follows the camera (like a skybox)
+const starPos = new Float32Array(6000 * 3), starCol = new Float32Array(6000 * 3);
+for (let i = 0; i < 6000; i++) {
+  const u = Math.random() * 2 - 1, a = Math.random() * 6.283, s = Math.sqrt(1 - u * u), r = 12000;
+  starPos.set([s * Math.cos(a) * r, u * r, s * Math.sin(a) * r], i * 3);
+  const tint = Math.random(); starCol.set([.7 + .3 * tint, .8, 1 - .2 * tint], i * 3);
+}
+const starGeo = new THREE.BufferGeometry();
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3)); starGeo.setAttribute('color', new THREE.BufferAttribute(starCol, 3));
+const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ size: 2, sizeAttenuation: false, vertexColors: true, fog: false }));
+scene.add(stars);
+
+// Seven worlds
+const worlds = PLANETS.map(p => {
+  const grp = new THREE.Group(); grp.position.set(...p.pos);
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(p.r, 32, 24),
+    new THREE.MeshStandardMaterial({ color: p.color, roughness: .85, metalness: .05, emissive: p.color, emissiveIntensity: .12 }));
+  grp.add(mesh);
+  if (p.ring) {
+    const ring = new THREE.Mesh(new THREE.RingGeometry(p.r * 1.4, p.r * 2, 64), new THREE.MeshBasicMaterial({ color: p.color, side: THREE.DoubleSide, transparent: true, opacity: .35 }));
+    ring.rotation.x = Math.PI / 2.4; grp.add(ring);
+  }
+  addGlow(grp, p.color, p.r * 4.2, .45);
+  scene.add(grp); return { p, grp, mesh, v: new THREE.Vector3(...p.pos) };
+});
+
+// Ship (nose points toward -Z)
+const ship = new THREE.Group(), body = new THREE.Group(); ship.add(body);
+const hullMat = new THREE.MeshStandardMaterial({ color: 0x9fb4d8, roughness: .4, metalness: .6 });
+const nose = new THREE.Mesh(new THREE.ConeGeometry(1.6, 7, 6), hullMat); nose.rotation.x = -Math.PI / 2; body.add(nose);
+const wings = new THREE.Mesh(new THREE.BoxGeometry(8, .25, 2.4), new THREE.MeshStandardMaterial({ color: 0x4a5a8a, roughness: .5, metalness: .5 })); wings.position.z = 1.4; body.add(wings);
+const engine = addGlow(body, 0x00e5ff, 5, .9); engine.position.z = 3.8;
+ship.position.set(...S.pos); ship.quaternion.set(...S.q).normalize(); scene.add(ship);
+camera.position.copy(ship.localToWorld(new THREE.Vector3(0, 5, 16))); camera.quaternion.copy(ship.quaternion);
+
+// Space dust near the ship gives a sense of speed
+const DUST = 260, dustPos = new Float32Array(DUST * 3);
+const dustGeo = new THREE.BufferGeometry(); dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+scene.add(new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0x9fdfff, size: 2.2, sizeAttenuation: false, transparent: true, opacity: .6 })));
+const respawnDust = (i, fwd) => {
+  const k = i * 3; dustPos[k] = ship.position.x + fwd.x * (60 + Math.random() * 200) + (Math.random() - .5) * 260;
+  dustPos[k + 1] = ship.position.y + fwd.y * (60 + Math.random() * 200) + (Math.random() - .5) * 260;
+  dustPos[k + 2] = ship.position.z + fwd.z * (60 + Math.random() * 200) + (Math.random() - .5) * 260;
+};
+{ const f = new THREE.Vector3(0, 0, -1).applyQuaternion(ship.quaternion); for (let i = 0; i < DUST; i++) respawnDust(i, f); }
+
+function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+
+/* ---------- Input: stick, boost, scan, keyboard ---------- */
+const joy = { x: 0, y: 0 }; let boosting = false;
+const pad = $('joy'), knob = $('knob'); let padId = null;
+function stick(e) {
+  const r = pad.getBoundingClientRect(), m = r.width / 2; let dx = e.clientX - r.left - m, dy = e.clientY - r.top - m;
+  const d = Math.hypot(dx, dy); if (d > m) { dx *= m / d; dy *= m / d; }
+  joy.x = Math.abs(dx) / m < .12 ? 0 : dx / m; joy.y = Math.abs(dy) / m < .12 ? 0 : dy / m; knob.style.transform = `translate(${dx}px,${dy}px)`;
+}
+const stickEnd = e => { if (e.pointerId === padId) { padId = null; joy.x = joy.y = 0; knob.style.transform = ''; } };
+pad.addEventListener('pointerdown', e => { padId = e.pointerId; pad.setPointerCapture(padId); stick(e); e.preventDefault(); });
+pad.addEventListener('pointermove', e => { if (e.pointerId === padId) stick(e); });
+pad.addEventListener('pointerup', stickEnd); pad.addEventListener('pointercancel', stickEnd);
+const bst = $('boost');
+bst.addEventListener('pointerdown', e => { boosting = true; bst.setPointerCapture(e.pointerId); e.preventDefault(); });
+['pointerup', 'pointercancel'].forEach(n => bst.addEventListener(n, () => { boosting = false; }));
+$('scan').addEventListener('pointerdown', e => { e.preventDefault(); act(); });
+const keys = new Set();
+addEventListener('keydown', e => {
+  if (e.code === 'Escape') { if (!$('dlg').hidden) closeDlg(); else if ($('ov').hidden) openMenu(); else if (S.started) closeMenu(); return; }
+  if (e.code === 'KeyE' && !e.repeat) act();
+  if (e.code.startsWith('Key') || e.code.startsWith('Arrow') || e.code.startsWith('Shift')) keys.add(e.code);
+  if (e.code.startsWith('Arrow')) e.preventDefault();
+});
+addEventListener('keyup', e => keys.delete(e.code));
+addEventListener('blur', () => { keys.clear(); boosting = false; });
+$('touch').hidden = !(matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window);
+
+/* ---------- Interaction ---------- */
+let near = null;
+function act() {
+  if (!$('dlg').hidden) return closeDlg();
+  if (frozen || !near) return;
+  const id = near.p.id, first = !S.scanned.includes(id);
+  $('dt').textContent = t('n.' + id); $('dx').textContent = t('l.' + id); $('dlg').hidden = false; frozen = true;
+  if (first) { S.scanned.push(id); persist(); objective(); toast(t('found', { name: t('n.' + id) })); [523, 659, 784].forEach((f, i) => tone(f, .45, i * .12)); } else tone(440, .12);
+}
+function closeDlg() { $('dlg').hidden = true; frozen = false; }
+$('dc').onclick = closeDlg;
+
+/* ---------- Main loop ---------- */
+const fwd = new THREE.Vector3(), tmp = new THREE.Vector3(), camTarget = new THREE.Vector3();
+let speed = 0, bank = 0, last = performance.now(), saveClock = 0;
+function update(dt) {
+  const kx = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
+  const ky = (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0);
+  const jx = joy.x || kx, jy = joy.y || ky, fast = boosting || keys.has('ShiftLeft') || keys.has('ShiftRight');
+  ship.rotateY(-jx * 1.5 * dt); ship.rotateX(-jy * 1.1 * dt);
+  speed += ((fast ? 260 : 70) - speed) * Math.min(1, 2 * dt);
+  fwd.set(0, 0, -1).applyQuaternion(ship.quaternion); ship.position.addScaledVector(fwd, speed * dt);
+  bank += (-jx * .6 - bank) * Math.min(1, 6 * dt); body.rotation.z = bank;
+  engine.scale.setScalar((fast ? 9 : 5) + Math.random() * .6);
+  // planets are solid
+  near = null; let best = 140;
+  for (const w of worlds) {
+    tmp.copy(ship.position).sub(w.v); const d = tmp.length(), min = w.p.r + 8;
+    if (d < min) ship.position.copy(w.v).addScaledVector(tmp.normalize(), min);
+    const gap = d - w.p.r; if (gap < best) { best = gap; near = w; }
+  }
+  $('prompt').classList.toggle('on', !!near); if (near) $('ptxt').textContent = t('near', { name: t('n.' + near.p.id) });
+  for (let i = 
